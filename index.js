@@ -1,6 +1,7 @@
 const express= require ('express');
 const app = express();
-
+const cors = require ('cors');
+app.use (cors());
 app.use(express.json());
 
 const db= require ('./connection');
@@ -59,11 +60,11 @@ app.post("/api/insertarPersonajes", async (request, response) => {
 
 app.post("/api/insertarActores", async (request, response) => {
     try {
-        const { nombre, edad, nacionalidad, premios } = request.body;
+        const { Nombre, Edad, Nacionalidad, Premios } = request.body;
         const query = `insert into actores (nombre, edad, nacionalidad, premios)
             values ($1, $2, $3, $4) `;
 
-        await db.query(query, [nombre, edad, nacionalidad, premios]);
+        await db.query(query, [Nombre, Edad, Nacionalidad, Premios]);
 
         response.json({ mensaje: "Actor insertado correctamente" }); 
     } catch (error) {
@@ -87,11 +88,11 @@ app.put("/api/actualizarPersonajes", async (request, response) => {
 
 app.put("/api/actualizarActores", async (request, response) => {
     try {
-        const { id, nombre, edad, nacionalidad, premios } = request.body;
+        const { Id, Nombre, Edad, Nacionalidad, Premios } = request.body;
 
         const query = `update actores set nombre = $1, edad = $2, nacionalidad = $3, premios = $4 where id = $5`;
 
-        await db.query(query, [nombre, edad, nacionalidad, premios, id]);
+        await db.query(query, [Nombre, Edad, Nacionalidad, Premios, Id]);
 
         response.json({ mensaje: "Actor actualizado correctamente" });
     } catch (error) {
@@ -99,7 +100,7 @@ app.put("/api/actualizarActores", async (request, response) => {
     }
 });
 
-app.delete("/api/eliminarPersonaje/:id", async (request, response) => {
+app.delete("/api/eliminarPersonajes/:id", async (request, response) => {
     try {
         const resultado = await db.query("delete from personajes where id = $1" ,[request.params.id]  );
        
