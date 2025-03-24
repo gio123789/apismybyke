@@ -72,33 +72,38 @@ app.post("/api/insertarActores", async (request, response) => {
     }
 });
 
-app.put("/api/actualizarPersonajes", async (request, response) => {
+app.put("/api/actualizarPersonajes/:id", async (request, response) => {
     try {
-        const { id, nombre, rol, pelicula, descripcion } = request.body;
+        const { id } = request.params;  
+        const { Nombre, Rol, Pelicula, Descripcion } = request.body;
 
-        const query = `update personajes set nombre = $1, rol = $2, pelicula = $3, descripcion = $4 WHERE id = $5`;
+        const query = `UPDATE personajes SET nombre = $1, rol = $2, pelicula = $3, descripcion = $4 WHERE id = $5`;
 
-        await db.query(query, [nombre, rol, pelicula, descripcion,id]);
+        await db.query(query, [Nombre, Rol, Pelicula, Descripcion, id]);
 
         response.json({ mensaje: "Personaje actualizado correctamente" });
     } catch (error) {
         console.log(error);
+        response.status(500).json({ mensaje: "Error al actualizar el personaje" });
     }
 });
 
-app.put("/api/actualizarActores", async (request, response) => {
+app.put("/api/actualizarActores/:id", async (request, response) => {
     try {
-        const { Id, Nombre, Edad, Nacionalidad, Premios } = request.body;
+        const { id } = request.params;  
+        const { Nombre, Edad, Nacionalidad, Premios } = request.body;
 
         const query = `update actores set nombre = $1, edad = $2, nacionalidad = $3, premios = $4 where id = $5`;
 
-        await db.query(query, [Nombre, Edad, Nacionalidad, Premios, Id]);
+        await db.query(query, [Nombre, Edad, Nacionalidad, Premios, id]);
 
         response.json({ mensaje: "Actor actualizado correctamente" });
     } catch (error) {
         console.log(error);
+        response.status(500).json({ mensaje: "Error al actualizar el actor" });
     }
 });
+
 
 app.delete("/api/eliminarPersonajes/:id", async (request, response) => {
     try {
