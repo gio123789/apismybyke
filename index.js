@@ -33,6 +33,7 @@ app.get("/api/consultaIdActores/:id", async (request, response) => {
 app.get("/api/selectTablas/:tabla", async (request, response) => {
     try {
         const { tabla } = request.params;
+        console.log(`SELECT * FROM ${tabla}`);
         const resultado = await db.query(`SELECT * FROM ${tabla}`);
         console.log(resultado.rows);
         response.json(resultado.rows); 
