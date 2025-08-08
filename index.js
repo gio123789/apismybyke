@@ -1,167 +1,275 @@
 const express= require ('express');
 const app = express();
+app.use(express.json());
 const cors = require ('cors');
 app.use (cors());
-app.use(express.json());
 
-const db= require ('./connection');
+const mongo= require ('./connection');
+const jwt = require('jsonwebtoken');
+const SECRET_KEY = process.env.SECRET_KEY;
 
 
-//consultas selec por id y tablas completas
-app.get("/api/consultaIdPersonajes/:id", async (request, response) => {
-    try {
-        const resultado = await db.query("select * from personajes where id = $1" ,[request.params.id]  );
-        console.log(resultado.rows);
-        
-    } catch (error) {
-        console.log(error);
+// Obtener las últimas mediciones por id del dispositivo
+async function obtenerUltimasMedicionesPorDispositivo(req, res) {
+  try {
+    const dispositivoId = req.params.id;
+
+    const data = await mongo.mediciones
+      .find({ "dispositivos.id": dispositivoId })
+      .sort({ fechaHora: -1 })
+      .limit(10); 
+
+    res.json(data);
+  } catch (err) {
+    console.error("Error al obtener mediciones por dispositivo:", err);
+    res.status(500).json({ error: 'Error al obtener datos' });
+  }
+}
+
+
+  async function obtenerUsuarios(req, res) {
+        try {
+            const data = await mongo.usuarios.find({});
+            res.json(data); 
+        } catch (err) {
+            console.error("Error al obtener datos:", err);
+        }
     }
-    response.send("respuesta");
-});
 
-app.get("/api/consultaIdActores/:id", async (request, response) => {
-    try {
-        const resultado = await db.query("select * from actores where id = $1" ,[request.params.id]  );
-        console.log(resultado.rows);
-        
-    } catch (error) {
-        console.log(error);
+    async function obtenerUsuariosId(req, res) {
+        try {
+            const id = req.params.id;
+            const data = await mongo.usuarios.findOne({ _id: id }); 
+            res.json(data); 
+        } catch (err) {
+            console.error("Error al obtener datos:", err);
+        }
     }
-    response.send("respuesta");
-});
-
-app.get("/api/selectTablas/:tabla", async (request, response) => {
-    try {
-        const { tabla } = request.params;
-        console.log(`SELECT * FROM ${tabla}`);
-        const resultado = await db.query(`SELECT * FROM ${tabla}`);
-        console.log(resultado.rows);
-        response.json(resultado.rows); 
-    } catch (error) {
-        console.log(error);
-    }
-});
-
-//funciones update, delete, insert 
-
-
-app.post("/api/insertarPersonajes", async (request, response) => {
-    try {
-        const { Nombre, Rol, Pelicula, Descripcion } = request.body;
-        const query = `insert into personajes (nombre, rol, pelicula, descripcion)
-            values ($1, $2, $3, $4) `;
-
-        await db.query(query, [Nombre, Rol, Pelicula, Descripcion]);
-
-        response.json({ mensaje: "Personaje insertado correctamente" }); 
-    } catch (error) {
-        console.log(error);
-    }
-});
-
-app.post("/api/insertarActores", async (request, response) => {
-    try {
-        const { Nombre, Edad, Nacionalidad, Premios } = request.body;
-        const query = `insert into actores (nombre, edad, nacionalidad, premios)
-            values ($1, $2, $3, $4) `;
-
-        await db.query(query, [Nombre, Edad, Nacionalidad, Premios]);
-
-        response.json({ mensaje: "Actor insertado correctamente" }); 
-    } catch (error) {
-        console.log(error);
-    }
-});
-
-app.put("/api/actualizarPersonajes/:id", async (request, response) => {
-    try {
-        const { id } = request.params;  
-        const { Nombre, Rol, Pelicula, Descripcion } = request.body;
-
-        const query = `UPDATE personajes SET nombre = $1, rol = $2, pelicula = $3, descripcion = $4 WHERE id = $5`;
-
-        await db.query(query, [Nombre, Rol, Pelicula, Descripcion, id]);
-
-        response.json({ mensaje: "Personaje actualizado correctamente" });
-    } catch (error) {
-        console.log(error);
-        response.status(500).json({ mensaje: "Error al actualizar el personaje" });
-    }
-});
-
-app.put("/api/actualizarActores/:id", async (request, response) => {
-    try {
-        const { id } = request.params;  
-        const { Nombre, Edad, Nacionalidad, Premios } = request.body;
-
-        const query = `update actores set nombre = $1, edad = $2, nacionalidad = $3, premios = $4 where id = $5`;
-
-        await db.query(query, [Nombre, Edad, Nacionalidad, Premios, id]);
-
-        response.json({ mensaje: "Actor actualizado correctamente" });
-    } catch (error) {
-        console.log(error);
-        response.status(500).json({ mensaje: "Error al actualizar el actor" });
-    }
-});
-
-
-app.delete("/api/eliminarPersonajes/:id", async (request, response) => {
-    try {
-        const resultado = await db.query("delete from personajes where id = $1" ,[request.params.id]  );
-       
-        response.json({ mensaje: "Personaje eliminado correctamente" });
-
-    } catch (error) {
-
-        console.log(error);
-        
-    }
-});
-
-app.delete("/api/eliminarActores/:id", async (request, response) => {
-    try {
-        const resultado = await db.query("delete from actores where id = $1" ,[request.params.id]  );
-       
-        response.json({ mensaje: "Actor eliminado correctamente" });
-
-    } catch (error) {
-
-        console.log(error);
-        
-    }
-});
-//funciones realizadas en clase
-
-app.get("/api/prueba/",(request,response)=>{
-    console.log("ya charcha esto de los apis");
-    response.send("respuesta");
-})
-
-app.get("/api/saludo/",(request,response)=>{
     
-    response.json({mensaje:"hola mundo"});
-})
+    
+    
+    async function insertarUsuarios(req, res) {
+        try {
+            const data = req.body;
+            const datos = await mongo.usuarios.create(data);
 
-app.get("/api/dato/:id",(request,response)=>{
-    console.log(request.params.id);
-    response.json();
-})
+            res.json(datos); 
+        } catch (err) {
+            console.error("Error al insertar datos:", err);   
+        }
+    }
 
-app.get("/api/info/:nombre", (request, response) => {
-    const nombre = request.params.nombre; 
-    response.json({ mensaje: "Hola " + nombre }); 
-});
 
-app.post("/api/post",(req, res) =>{
-console.log(req.body);
-const nombre = req.body.nombre; 
-const apellido = req.body.apellido;
-const edad = req.body.edad;  
-res.json({mensaje: "Hola " + nombre + " " + apellido + ", tu edad es: " + edad});
+    async function actualizarDatosUsuarios(req, res) {
+        try {
+            const ID = req.params.id;
+            const datosActualizar = req.body; 
+    
+            const resultado = await mongo.usuarios.updateOne(
+                {_id: ID}, 
+                { $set: datosActualizar } 
+            );
+            res.json(resultado);
+        } catch (err) {
+            console.error("Error al actualizar datos:", err);
+        }
+    }
+    
+    async function eliminarUsuarios(req, res) {
+        try {
+            const id = req.params.id;
+            const resultado = await mongo.usuarios.deleteOne({_id: id});
+            res.json(resultado);
+        } catch (err) {
+            console.error("Error al eliminar usuario:", err);
+        }
+    }
 
-});
+    //dispositivos
 
-app.listen(3000,(err)=>{
-    console.log("Si escucha el puerto 3000");
+    async function obtenerDispositivos(req, res) {
+        try {
+            const data = await mongo.dispositivos.find({});
+            res.json(data); 
+        } catch (err) {
+            console.error("Error al obtener datos:", err);
+        }
+    }
+
+    async function obtenerDispositivosId(req, res) {
+        try {
+            const id = req.params.id;
+            const data = await mongo.dispositivos.findOne({ id }); 
+            res.json(data); 
+        } catch (err) {
+            console.error("Error al obtener datos:", err);
+        }
+    }
+    
+    
+    
+    async function insertarDispositivos(req, res) {
+        try {
+            const data = req.body;
+            const datos = await mongo.dispositivos.create(data);
+
+            res.json(datos); 
+        } catch (err) {
+            console.error("Error al insertar datos:", err);   
+        }
+    }
+
+
+    async function actualizarDatosDispositivos(req, res) {
+        try {
+            const ID = req.params.id;
+            const datosActualizar = req.body; 
+    
+            const resultado = await mongo.dispositivos.updateOne(
+                {_id: ID}, 
+                { $set: datosActualizar } 
+            );
+            res.json(resultado);
+        } catch (err) {
+            console.error("Error al actualizar datos:", err);
+        }
+    }
+    
+    async function eliminarDispositivos(req, res) {
+        try {
+            const id = req.params.id;
+            const resultado = await mongo.dispositivos.deleteOne({_id: id});
+            res.json(resultado);
+        } catch (err) {
+            console.error("Error al eliminar dispositivo:", err);
+        }
+    }
+
+    async function obtenerMediciones(req, res) {
+        try {
+            const data = await mongo.mediciones.find({});
+            res.json(data); 
+        } catch (err) {
+            console.error("Error al obtener datos:", err);
+        }
+    }
+
+        async function obtenerMedicionesId(req, res) {
+        try {
+            const id = req.params.id;
+            const data = await mongo.mediciones.findOne({ _id: id }); 
+            res.json(data); 
+        } catch (err) {
+            console.error("Error al obtener datos:", err);
+        }
+    }
+    
+    
+    
+    async function insertarMediciones(req, res) {
+    try {
+        const data = req.body;
+
+        
+        data.fechaHora = new Date();
+
+        const datos = await mongo.mediciones.create(data);
+
+        res.json(datos);
+    } catch (err) {
+        console.error("Error al insertar datos:", err);
+        res.status(500).json({ error: err.message });
+    }
+}
+
+    
+
+ async function login(req, res) {
+  try {
+    const { correo, contrasenia } = req.body;
+
+    
+    const usuario = await mongo.usuarios.findOne({ correo });
+
+    if (!usuario) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    
+    if (usuario.contrasenia !== contrasenia) {
+      return res.status(401).json({ message: 'Contraseña incorrecta' });
+    }
+
+    
+    const token = jwt.sign(
+      { id: usuario._id, correo: usuario.correo },
+      SECRET_KEY,
+      { expiresIn: '2h' }
+    );
+
+    
+    res.json({
+      token,
+      usuarioId: usuario._id,
+      correo: usuario.correo
+    });
+
+  } catch (err) {
+    console.error('Error en login:', err);
+    res.status(500).json({ message: 'Error del servidor' });
+  }
+}
+
+app.get("/api/mediciones/ultimasPorDispositivo/:id", obtenerUltimasMedicionesPorDispositivo);
+
+app.post('/api/login', login);
+
+//Api para obtener datos sin filtro
+app.get("/api/usuarios/todos", obtenerUsuarios);
+
+//Api para buscar por id 
+
+app.get("/api/usuarios/:id", obtenerUsuariosId);
+
+//Api para insertar registros en mi coleccion
+app.post("/api/usuarios/insertar", insertarUsuarios);
+
+//Api para actualizar registros en mi colecion
+
+app.put("/api/usuarios/actualizarUsuarios/:id", actualizarDatosUsuarios);
+
+//Api para eliminar 
+
+app.delete("/api/usuarios/eliminarUsuarios/:id", eliminarUsuarios);
+
+app.get("/api/mediciones/todos", obtenerMediciones);
+
+app.get("/api/mediciones/:id", obtenerMedicionesId)
+
+app.post("/api/mediciones/insertar", insertarMediciones);
+
+app.get("/api/dispositivos/todos", obtenerDispositivos);
+
+//Api para buscar por id 
+
+app.get("/api/dispositivos/:id", obtenerDispositivosId);
+
+//Api para insertar registros en mi coleccion
+app.post("/api/dispositivos/insertar", insertarDispositivos);
+
+//Api para actualizar registros en mi colecion
+
+app.put("/api/dispositivos/actualizarUsuarios/:id", actualizarDatosDispositivos);
+
+//Api para eliminar 
+
+app.delete("/api/dispositivos/eliminarUsuarios/:id", eliminarDispositivos);
+
+
+
+
+
+
+app.listen(4000,(err)=>{
+    console.log("Si escucha el puerto 4000");
 })
